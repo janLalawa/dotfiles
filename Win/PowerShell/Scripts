@@ -1,0 +1,6 @@
+Install-Module -Name Terminal-Icons -Repository PSGallery -Force
+Install-Module -Name z -Force
+winget install JanDeDobbeleer.OhMyPosh -s winget
+winget install fzf
+Install-Module -Name PSFzf -Force
+Install-Module -Name posh-git -Force
