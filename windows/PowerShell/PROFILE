@@ -1,0 +1,85 @@
+# Critical color-related modules first
+Import-Module PSReadLine
+Import-Module Terminal-Icons
+Set-TerminalIconsTheme -ColorTheme DevBlackOps -IconTheme devblackops
+
+# PSReadLine config
+Set-PSReadLineOption -PredictionSource History
+Set-PSReadLineOption -PredictionViewStyle ListView
+Set-PSReadLineOption -EditMode Windows
+Set-PSReadLineOption -Colors @{
+    Command = [ConsoleColor]::Green
+    Number = [ConsoleColor]::Yellow
+    Member = [ConsoleColor]::Cyan
+    Parameter = [ConsoleColor]::Cyan
+    Type = [ConsoleColor]::Gray
+    Variable = [ConsoleColor]::Red
+    String = [ConsoleColor]::Yellow
+}
+
+# Start async module imports for non-critical modules
+$moduleImports = @(
+    [PowerShell]::Create().AddScript({Import-Module PSFzf})
+    [PowerShell]::Create().AddScript({Import-Module z})
+)
+$handles = @()
+foreach ($import in $moduleImports) {
+    $handles += $import.BeginInvoke()
+}
+
+# Initialize Oh-My-Posh (cached)
+$ohmyposhCache = "$env:TEMP\ohmyposh_init.ps1"
+if (!(Test-Path $ohmyposhCache) -or ((Get-Item $ohmyposhCache).LastWriteTime -lt (Get-Date).AddDays(-1))) {
+    oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\atomic.omp.json" > $ohmyposhCache
+}
+. $ohmyposhCache
+
+# Quick aliases and env vars
+Set-Alias vim nvim
+Set-Alias ll Get-ChildItem
+Set-Alias g git
+Set-Alias grep findstr
+$env:PATH = "C:\Users\LauraMoore\.local\bin;$env:PATH"
+$env:TERM = "xterm-256color"
+$env:GIT_PAGER = "less -FRX"
+
+# Functions (lightweight)
+function lvim { & "C:\Users\LauraMoore\.local\bin\lvim.ps1" $args }
+function which ($command) {
+    Get-Command -Name $command -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty Path -ErrorAction SilentlyContinue
+}
+function gs { git status }
+function gaa { git add --all }
+function gc($message) { git commit -m $message }
+function gp { git push }
+function gpl { git pull }
+function cd... { Set-Location ..\.. }
+function cd.... { Set-Location ..\..\.. }
+function touch($file) { "" | Out-File $file -Encoding ASCII }
+function cd_with_ls {
+    param($path)
+    Set-Location $path
+    Get-ChildItem
+}
+Set-Alias -Name cd -Value cd_with_ls -Option AllScope
+
+# Defer PSFzf config...
+$configTimer = New-Object System.Timers.Timer
+$configTimer.Interval = 2000
+$configTimer.AutoReset = $false
+$configTimer.Add_Elapsed({
+
+    # PSFzf config
+    Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+f' -PSReadlineChordReverseHistory 'Ctrl+r'
+})
+$configTimer.Start()
+
+# Wait for module imports...
+for ($i = 0; $i -lt $moduleImports.Count; $i++) {
+    $moduleImports[$i].EndInvoke($handles[$i])
+}
+
+# Clear screen and show directory
+Clear-Host
+Get-ChildItem

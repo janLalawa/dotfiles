@@ -1,5 +1,16 @@
 local wezterm = require 'wezterm'
-local config = {}
+local config = wezterm.config_builder()
+
+-- Performance optimizations
+config.front_end = "WebGpu" -- Modern GPU rendering
+config.webgpu_power_preference = "HighPerformance"
+config.animation_fps = 1 -- Reduce animations
+config.max_fps = 60 -- Cap FPS to save resources
+config.enable_wayland = false -- Disable Wayland detection
+config.enable_scroll_bar = true
+config.scrollback_lines = 5000 -- Reasonable scrollback limit
+config.exit_behavior = "Close" -- Fast exit
+
 
 -- Color scheme
 config.color_scheme = 'Catppuccin Mocha'
@@ -64,11 +75,18 @@ config.set_environment_variables = {
 config.use_fancy_tab_bar = false
 config.tab_bar_at_bottom = true
 
--- Better handling of Git and other CLI tools
+-- Better handling of Git and other input optimisation
 config.enable_kitty_keyboard = true
 config.enable_csi_u_key_encoding = true
-
+config.use_ime = true
+config.check_for_updates = false
 config.default_domain = 'local'
 
-return config
+-- Smart features
+config.adjust_window_size_when_changing_font_size = false
+config.warn_about_missing_glyphs = false
 
+-- Quick fallback for SSH
+config.ssh_domains = {}
+
+return config
